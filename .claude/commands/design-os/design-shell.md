@@ -191,15 +191,20 @@ If design tokens exist, apply them to the shell components:
 
 **Colors:**
 - Read `/product/design-system/colors.json`
-- Use primary color for active nav items, key accents
-- Use secondary color for hover states, subtle highlights
-- Use neutral color for backgrounds, borders, text
+- If `tailwindClasses` field exists, use those class prefixes (e.g., `bg-revo-navy`, `text-revo-purple`, `bg-revo-gray`). These are custom colors defined in `@theme` in `src/index.css`.
+- If no `tailwindClasses`, use the color value as a Tailwind palette name with shade suffixes
+- Use primary color for text, headings, dark surfaces
+- Use secondary color for CTAs, active states, accent highlights
+- Use neutral color for light backgrounds, borders, cards
+- For opacity variants with custom colors, use Tailwind's `/` syntax (e.g., `bg-revo-navy/60`)
+- If `palette` field exists, additional brand colors are available — use sparingly per `ratio` guidance
 
 **Typography:**
 - Read `/product/design-system/typography.json`
-- Apply heading font to nav items and titles
-- Apply body font to other text
-- Include Google Fonts import in the preview
+- If `selfHost` is `true`, fonts are loaded via `@font-face` in CSS — do NOT add Google Fonts imports
+- If `fontStack` field exists, use the `font-product` Tailwind class on all product components
+- Apply heading rules from `headingRules` field if present (line-height, capitalization, bold key phrases)
+- If `selfHost` is not set, include Google Fonts import in the preview
 
 ## Step 9: Confirm Completion
 
