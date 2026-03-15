@@ -255,8 +255,45 @@ interface ColorSwatchProps {
   colorName: string
 }
 
+/**
+ * Detect if a color value is a hex code (e.g. "#0A0A56") vs a Tailwind name (e.g. "indigo")
+ */
+function isHexColor(value: string): boolean {
+  return value.startsWith('#')
+}
+
+/**
+ * Generate lighter and darker variants of a hex color for the swatch
+ */
+function hexVariants(hex: string): { light: string; base: string; dark: string } {
+  // Parse hex to RGB
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+
+  // Light: mix with white (60%)
+  const lr = Math.round(r + (255 - r) * 0.6)
+  const lg = Math.round(g + (255 - g) * 0.6)
+  const lb = Math.round(b + (255 - b) * 0.6)
+
+  // Dark: mix with black (30%)
+  const dr = Math.round(r * 0.7)
+  const dg = Math.round(g * 0.7)
+  const db = Math.round(b * 0.7)
+
+  const toHex = (n: number) => n.toString(16).padStart(2, '0')
+
+  return {
+    light: `#${toHex(lr)}${toHex(lg)}${toHex(lb)}`,
+    base: hex,
+    dark: `#${toHex(dr)}${toHex(dg)}${toHex(db)}`,
+  }
+}
+
 function ColorSwatch({ label, colorName }: ColorSwatchProps) {
-  const colors = colorMap[colorName] || colorMap.stone
+  const colors = isHexColor(colorName)
+    ? hexVariants(colorName)
+    : (colorMap[colorName] || colorMap.stone)
 
   return (
     <div>
@@ -264,21 +301,21 @@ function ColorSwatch({ label, colorName }: ColorSwatchProps) {
         <div
           className="flex-1 h-14 rounded-l-md"
           style={{ backgroundColor: colors.light }}
-          title={`${colorName}-300`}
+          title={isHexColor(colorName) ? `${colorName} light` : `${colorName}-300`}
         />
         <div
           className="flex-[2] h-14"
           style={{ backgroundColor: colors.base }}
-          title={`${colorName}-500`}
+          title={isHexColor(colorName) ? colorName : `${colorName}-500`}
         />
         <div
           className="flex-1 h-14 rounded-r-md"
           style={{ backgroundColor: colors.dark }}
-          title={`${colorName}-600`}
+          title={isHexColor(colorName) ? `${colorName} dark` : `${colorName}-600`}
         />
       </div>
       <p className="text-sm font-medium text-stone-900 dark:text-stone-100">{label}</p>
-      <p className="text-xs text-stone-500 dark:text-stone-400">{colorName}</p>
+      <p className="text-xs text-stone-500 dark:text-stone-400 font-mono">{colorName}</p>
     </div>
   )
 }

@@ -134,14 +134,25 @@ export function InvoiceList({
 ### Applying Design Tokens
 
 **If `/product/design-system/colors.json` exists:**
-- Use the primary color for buttons, links, and key accents
-- Use the secondary color for tags, highlights, secondary elements
-- Use the neutral color for backgrounds, text, and borders
-- Example: If primary is `lime`, use `lime-500`, `lime-600`, etc. for primary actions
+- Use the primary color for text, headings, dark backgrounds
+- Use the secondary color for buttons, links, CTAs, accent highlights
+- Use the neutral color for light backgrounds, cards, borders
+
+**Determining Tailwind classes:**
+- If `tailwindClasses` field exists in colors.json, use those class prefixes (e.g., `bg-revo-navy`, `text-revo-purple`, `bg-revo-gray`). These are custom colors defined in `@theme` in `src/index.css`.
+- If no `tailwindClasses`, use the color value as a Tailwind palette name with shade suffixes (e.g., `lime-500`, `lime-600`)
+- For opacity variants with custom colors, use Tailwind's `/` syntax (e.g., `bg-revo-navy/60`, `text-revo-purple/10`)
+- For dark mode with custom colors: dark backgrounds use the primary color (`bg-revo-navy`), text inverts to white (`text-white`), accents stay the same
+
+**If `palette` field exists in colors.json:**
+- Additional brand colors are available (e.g., `revo-yellow`, `revo-magenta`, `revo-coral`, `revo-indigo`)
+- Use these sparingly for decorative accents per the `ratio` field guidance
 
 **If `/product/design-system/typography.json` exists:**
+- If `selfHost` is `true`, fonts are loaded via `@font-face` in CSS — no Google Fonts import needed
+- If `fontStack` field exists, use the `font-product` Tailwind class (defined in `@theme` in `src/index.css`) on all product components
 - Note the font choices for reference in comments
-- The fonts will be applied at the app level, but use appropriate font weights
+- Apply heading rules from `headingRules` field if present (e.g., line-height, capitalization, bold key phrases)
 
 **If design tokens don't exist:**
 - Fall back to `stone` for neutrals and `lime` for accents (Design OS defaults)

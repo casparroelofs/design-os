@@ -98,18 +98,53 @@ Does this look good? Ready to save it?"
 
 ## Step 6: Create the Files
 
-Once approved, create two files:
+Once approved, create two files.
+
+### Standard Tailwind Colors
+
+If using Tailwind's built-in color palette names:
 
 **File 1:** `/product/design-system/colors.json`
 ```json
 {
-  "primary": "[color]",
-  "secondary": "[color]",
-  "neutral": "[color]"
+  "primary": "[tailwind-color-name]",
+  "secondary": "[tailwind-color-name]",
+  "neutral": "[tailwind-color-name]"
 }
 ```
 
+### Custom Brand Colors
+
+If using custom brand hex values (e.g., RevoData brand), you must also:
+1. Define the colors in `src/index.css` under `@theme` as `--color-[prefix]`
+2. Include a `tailwindClasses` field mapping primary/secondary/neutral to the Tailwind utility class prefix
+
+**File 1:** `/product/design-system/colors.json`
+```json
+{
+  "brand": "[brand-name]",
+  "primary": "#[hex]",
+  "secondary": "#[hex]",
+  "neutral": "#[hex]",
+  "tailwindClasses": {
+    "primary": "[prefix]",
+    "secondary": "[prefix]",
+    "neutral": "[prefix]"
+  },
+  "palette": {
+    "[name]": "#[hex]"
+  },
+  "ratio": {
+    "[percent]": "[usage description]"
+  }
+}
+```
+
+### Typography
+
 **File 2:** `/product/design-system/typography.json`
+
+For Google Fonts:
 ```json
 {
   "heading": "[Font Name]",
@@ -117,6 +152,24 @@ Once approved, create two files:
   "mono": "[Font Name]"
 }
 ```
+
+For self-hosted fonts (e.g., brand fonts loaded via `@font-face`):
+```json
+{
+  "heading": "[Font Name]",
+  "body": "[Font Name]",
+  "mono": "[Font Name]",
+  "fontStack": "[full CSS font-family value]",
+  "selfHost": true,
+  "headingRules": {
+    "capitalization": "[rule]",
+    "lineHeight": "[value]",
+    "boldKeyPhrases": true
+  }
+}
+```
+
+When `selfHost` is `true`, add `@font-face` declarations to `src/index.css` and a `--font-product` custom property to `@theme`.
 
 ## Step 7: Confirm Completion
 
@@ -159,8 +212,9 @@ Available colors (each has shades 50-950):
 
 ## Important Notes
 
-- Colors should be Tailwind palette names (not hex codes)
-- Fonts should be exact Google Fonts names
+- Colors can be Tailwind palette names (e.g., `lime`, `indigo`) OR custom hex codes with a `tailwindClasses` mapping
+- When using custom hex colors, you MUST also define them in `src/index.css` under `@theme` and include a `tailwindClasses` field in colors.json
+- Fonts can be Google Fonts names OR self-hosted brand fonts with `selfHost: true` and `@font-face` declarations
 - Keep suggestions contextual to the product type
 - The mono font is optional but recommended for any product with code/technical content
 - Design tokens apply to screen designs only — the Design OS app keeps its own aesthetic
