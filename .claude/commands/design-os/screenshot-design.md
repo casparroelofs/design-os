@@ -1,112 +1,129 @@
 # Screenshot Screen Design
 
-You are helping the user capture a screenshot of a screen design they've created. The screenshot will be saved to the product folder for documentation purposes.
-
-## Prerequisites: Check for Playwright MCP
-
-Before proceeding, verify that you have access to the Playwright MCP tool. Look for a tool named `browser_take_screenshot` or `mcp__playwright__browser_take_screenshot`.
-
-If the Playwright MCP tool is not available, output this EXACT message to the user (copy it verbatim, do not modify or "correct" it):
-
----
-To capture screenshots, I need the Playwright MCP server installed. Please run:
-
-```
-claude mcp add playwright npx @playwright/mcp@latest
-```
-
-Then restart this Claude Code session and run `/screenshot-design` again.
----
-
-Do not substitute different package names or modify the command. Output it exactly as written above.
-
-Do not proceed with the rest of this command if Playwright MCP is not available.
+You are helping the user capture screenshots of a screen design. Screenshots can be captured in multiple variants: light/dark mode and desktop/mobile viewports.
 
 ## Step 1: Identify the Screen Design
 
-First, determine which screen design to screenshot.
+Read `/product/product-roadmap.md` to get the list of available sections, then check `src/sections/` for existing screen designs.
 
-Read `/product/product-roadmap.md` to get the list of available sections, then check `src/sections/` to see what screen designs exist.
+If only one screen design exists, auto-select it.
 
-If only one screen design exists across all sections, auto-select it.
-
-If multiple screen designs exist, use the AskUserQuestion tool to ask which one to screenshot:
+If multiple exist, ask the user which one to screenshot:
 
 "Which screen design would you like to screenshot?"
 
-Present the available screen designs as options, grouped by section:
+Present options grouped by section:
 - [Section Name] / [ScreenDesignName]
-- [Section Name] / [ScreenDesignName]
 
-## Step 2: Start the Dev Server
+## Step 2: Ask Which Variants
 
-Start the dev server yourself using Bash. Run `npm run dev` in the background so you can continue with the screenshot capture.
+Ask the user which variants to capture:
 
-Do NOT ask the user if the server is running or tell them to start it. You must start it yourself.
+"Which variants should I capture?
+- **All 4** — light desktop, dark desktop, light mobile, dark mobile
+- **Desktop only** — light + dark at 1280x800
+- **Mobile only** — light + dark at 375x812
+- **Light only** — desktop + mobile in light mode
+- **Dark only** — desktop + mobile in dark mode
+- **Single** — just one specific combination"
 
-After starting the server, wait a few seconds for it to be ready before navigating to the screen design URL.
+## Step 3: Check for Demo States
 
-## Step 3: Capture the Screenshot
+Check if `product/sections/[section-id]/demo-config.json` exists, or if the screen design preview component has demo state controls (look for state buttons or a `DemoState` type in `src/sections/[section-id]/[ScreenDesignName].tsx`).
 
-Use the Playwright MCP tool to navigate to the screen design and capture a screenshot.
+If demo states exist, capture the selected variants for each state.
 
-The screen design URL pattern is: `http://localhost:3000/sections/[section-id]/screen-designs/[screen-design-name]`
+## Step 4: Capture Screenshots
 
-1. First, use `browser_navigate` to go to the screen design URL
-2. Wait for the page to fully load
-3. **Click the "Hide" link** in the navigation bar to hide it before taking the screenshot. The Hide button has the attribute `data-hide-header` which you can use to locate it.
-4. Use `browser_take_screenshot` to capture the page (without the navigation bar)
+Use `agent-browser` (the CLI tool, via Bash) to capture screenshots.
 
-**Screenshot specifications:**
-- Capture at desktop viewport width (1280px recommended)
-- Use **full page screenshot** to capture the entire scrollable content (not just the viewport)
-- PNG format for best quality
+### Setup
 
-When using `browser_take_screenshot`, set `fullPage: true` to capture the entire page including content below the fold.
-
-## Step 4: Save the Screenshot
-
-The Playwright MCP tool can only save screenshots to its default output directory (`.playwright-mcp/`). You must save the screenshot there first, then copy it to the product folder.
-
-1. **First**, use `browser_take_screenshot` with just a filename (no path):
-   - Use a simple filename like `dashboard.png` or `invoice-list.png`
-   - The file will be saved to `.playwright-mcp/[filename].png`
-
-2. **Then**, copy the file to the product folder using Bash:
+1. Start the dev server (`npm run dev`) in the background using Bash
+2. Wait a few seconds for the server to be ready
+3. Open the fullscreen URL:
    ```bash
-   cp .playwright-mcp/[filename].png product/sections/[section-id]/[filename].png
+   agent-browser open "http://localhost:3000/sections/[section-id]/screen-designs/[screen-design-name]/fullscreen"
+   ```
+4. Wait for the page to load:
+   ```bash
+   agent-browser wait --load networkidle
    ```
 
-**Naming convention:** `[screen-design-name]-[variant].png`
+### Capture each variant
 
-Examples:
-- `invoice-list.png` (main view)
-- `invoice-list-dark.png` (dark mode variant)
-- `invoice-detail.png`
-- `invoice-form-empty.png` (empty state)
+For each selected variant, set the viewport + theme, then capture:
 
-If the user wants both light and dark mode screenshots, capture both.
+```bash
+# Set viewport (pick one)
+agent-browser set viewport 1280 800   # desktop
+agent-browser set viewport 375 812    # mobile
 
-## Step 5: Confirm Completion
+# Set theme (pick one)
+agent-browser set media light
+agent-browser storage local set theme light
+# OR
+agent-browser set media dark
+agent-browser storage local set theme dark
 
-Let the user know:
+# Reload to apply theme fully, then capture
+agent-browser reload
+agent-browser wait --load networkidle
+agent-browser screenshot --full product/sections/[section-id]/[name]-[variant].png
+```
 
-"I've saved the screenshot to `product/sections/[section-id]/[filename].png`.
+### Demo states
 
-The screenshot captures the **[ScreenDesignName]** screen design for the **[Section Title]** section."
+If the section has demo states, use the snapshot to find and click state control buttons between captures:
 
-If they want additional screenshots (e.g., dark mode, different states):
+```bash
+agent-browser snapshot -i
+agent-browser click @[ref]  # Click the state button
+```
 
-"Would you like me to capture any additional screenshots? For example:
-- Dark mode version
-- Mobile viewport
-- Different states (empty, loading, etc.)"
+### Naming convention
+
+`[screen-design-name]-[variant].png`
+
+| Variant | Filename |
+|---------|----------|
+| Light desktop | `hero-light-desktop.png` |
+| Dark desktop | `hero-dark-desktop.png` |
+| Light mobile | `hero-light-mobile.png` |
+| Dark mobile | `hero-dark-mobile.png` |
+
+With demo states: `[name]-[state]-[variant].png` (e.g., `create-empty-light-desktop.png`)
+
+### Screenshot specifications
+
+- Desktop: 1280x800 viewport
+- Mobile: 375x812 viewport (iPhone 14 equivalent)
+- Full page screenshots (`--full`) to capture all scrollable content
+- PNG format
+
+## Step 5: Cleanup
+
+Close the browser and kill the dev server when done.
+
+```bash
+agent-browser close
+```
+
+## Step 6: Confirm Completion
+
+List all screenshots saved:
+
+"I've saved screenshots to `product/sections/[section-id]/`:
+
+[List each file with a brief description]
+
+The screenshots capture the **[ScreenDesignName]** screen design for the **[Section Title]** section."
 
 ## Important Notes
 
-- Start the dev server yourself - do not ask the user to do it
+- Start the dev server yourself — do not ask the user to do it
 - Screenshots are saved to `product/sections/[section-id]/` alongside spec.md and data.json
-- Use descriptive filenames that indicate the screen design and any variant (dark mode, mobile, etc.)
-- Capture at a consistent viewport width for documentation consistency
-- Always capture full page screenshots to include all scrollable content
-- After you're done, you may kill the dev server if you started it
+- Always use the `/fullscreen` route — it renders the screen design without Design OS chrome
+- Both `set media` and `storage local set theme` are needed — `set media` handles CSS `prefers-color-scheme`, `storage local` handles the app's theme state
+- Reload after changing theme to ensure full re-render
+- After you're done, kill the dev server if you started it
