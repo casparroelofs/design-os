@@ -52,23 +52,29 @@ Use `agent-browser` (the CLI tool, via Bash) to capture screenshots.
 
 ### Capture each variant
 
-For each selected variant, set the viewport + theme, then capture:
+For each selected variant, set the viewport, set the theme in localStorage, navigate fresh, force animations visible, then capture:
 
 ```bash
 # Set viewport (pick one)
 agent-browser set viewport 1280 800   # desktop
 agent-browser set viewport 375 812    # mobile
 
-# Set theme (pick one)
-agent-browser set media light
-agent-browser storage local set theme light
+# Set theme via localStorage (Design OS reads theme from localStorage on mount)
+agent-browser eval "localStorage.setItem('theme', 'light')"
 # OR
-agent-browser set media dark
-agent-browser storage local set theme dark
+agent-browser eval "localStorage.setItem('theme', 'dark')"
 
-# Reload to apply theme fully, then capture
-agent-browser reload
+# Navigate fresh (page reads theme from localStorage on mount)
+agent-browser open "http://localhost:3000/sections/[section-id]/screen-designs/[screen-design-name]/fullscreen"
 agent-browser wait --load networkidle
+agent-browser wait 3000
+
+# Force all animations to complete (elements start at opacity:0 until animated/scrolled into view)
+agent-browser eval "document.querySelectorAll('.scroll-reveal').forEach(el => el.classList.add('visible'))"
+agent-browser eval "document.querySelectorAll('.animate-stagger-in').forEach(el => { el.style.animation = 'none'; el.style.opacity = '1'; el.style.transform = 'translateY(0)'; })"
+agent-browser wait 500
+
+# Capture
 agent-browser screenshot --full product/sections/[section-id]/[name]-[variant].png
 ```
 
@@ -124,6 +130,8 @@ The screenshots capture the **[ScreenDesignName]** screen design for the **[Sect
 - Start the dev server yourself — do not ask the user to do it
 - Screenshots are saved to `product/sections/[section-id]/` alongside spec.md and data.json
 - Always use the `/fullscreen` route — it renders the screen design without Design OS chrome
-- Both `set media` and `storage local set theme` are needed — `set media` handles CSS `prefers-color-scheme`, `storage local` handles the app's theme state
-- Reload after changing theme to ensure full re-render
+- **Theme switching:** Design OS uses `localStorage` + `.dark` class, NOT CSS `prefers-color-scheme`. Set `localStorage.setItem('theme', ...)` before navigating — do NOT use `set media`
+- **Animations:** Design OS uses `scroll-reveal` (IntersectionObserver) and `animate-stagger-in` (CSS keyframes with delays). Both start at `opacity: 0`. Always force these visible via JS before screenshotting, or below-fold content will be invisible
+- For each theme variant, navigate fresh (`agent-browser open`) rather than toggling in-place — this avoids animation restarts from React re-renders
+- For parallel agents, use `agent-browser --session [id]` on every command to isolate browser instances
 - After you're done, kill the dev server if you started it
